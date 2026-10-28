@@ -737,8 +737,11 @@ def cmd_extract(args: argparse.Namespace) -> None:
             decrypt_all(db_dir, "decrypted", out_file)
         return
     except SignatureInvalidError as e:
-        _print(f"[ERROR] {e}")
-        sys.exit(1)
+        # 内存扫描失败不代表整条路走不通：微信 4.1.10+ 本来就不再缓存明文 raw key，
+        # 密钥只在系统派生函数被调用那一瞬间存在，只能靠第 4 级 LLDB 断点抓。
+        # 在这里 exit 会让流程永远走不到第 4 级，所以只提示、不退出。
+        _print(f"[*] 内存扫描不可用（{e}）")
+        _print("[*] 跳过内存扫描，继续尝试 LLDB 断点捕获")
     except KeysNotFoundError:
         _print("[*] 内存里没有明文密钥，微信应该是 4.1.10+ 版本，需要用 LLDB 抓 passphrase")
 
